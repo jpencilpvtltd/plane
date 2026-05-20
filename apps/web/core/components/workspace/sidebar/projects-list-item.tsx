@@ -177,13 +177,13 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
         element,
         canDrop: ({ source }) =>
           !disableDrop && source?.data?.id !== projectId && source?.data?.dragInstanceId === "PROJECTS",
-        getData: ({ input, element }) => {
+        getData: ({ input, element: dropElement }) => {
           const data = { id: projectId };
 
           // attach instruction for last in list
           return attachInstruction(data, {
             input,
-            element,
+            element: dropElement,
             currentLevel: 0,
             indentPerLevel: 0,
             mode: isLastChild ? "last-in-group" : "standard",
@@ -222,7 +222,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
         },
       })
     );
-  }, [projectId, isLastChild, projectListType, handleOnProjectDrop]);
+  }, [projectId, isLastChild, projectListType, handleOnProjectDrop, disableDrag, disableDrop, project]);
 
   useEffect(() => {
     if (isMenuActive) toggleAnySidebarDropdown(true);
@@ -288,6 +288,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
           })}
           ref={projectRef}
         >
+          {/* drag indicator */}
           <DropIndicator classNames="absolute top-0" isVisible={instruction === "DRAG_OVER"} />
           <div
             className={cn(
@@ -352,6 +353,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                 )}
               </ControlLink>
               <div className="flex items-center gap-1">
+                {/* Menu Section */}
                 <CustomMenu
                   customButton={
                     <IconButton

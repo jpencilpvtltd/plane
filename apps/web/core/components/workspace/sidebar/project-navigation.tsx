@@ -8,9 +8,17 @@ import React, { useCallback, useMemo } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
+import { Clock } from "lucide-react";
 import { EUserPermissionsLevel, EUserPermissions } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
-import { CycleIcon, IntakeIcon, ModuleIcon, PageIcon, ViewsIcon, WorkItemsIcon } from "@plane/propel/icons";
+import {
+  CycleIcon,
+  IntakeIcon,
+  ModuleIcon,
+  PageIcon,
+  ViewsIcon,
+  WorkItemsIcon,
+} from "@plane/propel/icons";
 import type { EUserProjectRoles } from "@plane/types";
 // plane ui
 // components
@@ -35,15 +43,24 @@ export type TNavigationItem = {
 type TProjectItemsProps = {
   workspaceSlug: string;
   projectId: string;
-  additionalNavigationItems?: (workspaceSlug: string, projectId: string) => TNavigationItem[];
+  additionalNavigationItems?: (
+    workspaceSlug: string,
+    projectId: string,
+  ) => TNavigationItem[];
 };
 
-export const ProjectNavigation = observer(function ProjectNavigation(props: TProjectItemsProps) {
+export const ProjectNavigation = observer(function ProjectNavigation(
+  props: TProjectItemsProps,
+) {
   const { workspaceSlug, projectId, additionalNavigationItems } = props;
   const { workItem: workItemIdentifierFromRoute } = useParams();
   // store hooks
   const { t } = useTranslation();
-  const { isExtendedProjectSidebarOpened, toggleExtendedProjectSidebar, toggleSidebar } = useAppTheme();
+  const {
+    isExtendedProjectSidebarOpened,
+    toggleExtendedProjectSidebar,
+    toggleSidebar,
+  } = useAppTheme();
   const { getPartialProjectById } = useProject();
   const { allowPermissions } = useUserPermissions();
   const {
@@ -69,14 +86,18 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
   };
 
   const baseNavigation = useCallback(
-    (workspaceSlug: string, projectId: string): TNavigationItem[] => [
+    (): TNavigationItem[] => [
       {
         i18n_key: "sidebar.work_items",
         key: "work_items",
         name: "Work items",
         href: `/${workspaceSlug}/projects/${projectId}/issues`,
         icon: WorkItemsIcon,
-        access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
+        access: [
+          EUserPermissions.ADMIN,
+          EUserPermissions.MEMBER,
+          EUserPermissions.GUEST,
+        ],
         shouldRender: true,
         sortOrder: 1,
       },
@@ -106,7 +127,11 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         name: "Views",
         href: `/${workspaceSlug}/projects/${projectId}/views`,
         icon: ViewsIcon,
-        access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
+        access: [
+          EUserPermissions.ADMIN,
+          EUserPermissions.MEMBER,
+          EUserPermissions.GUEST,
+        ],
         shouldRender: project?.issue_views_view ?? false,
         sortOrder: 4,
       },
@@ -116,7 +141,11 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         name: "Pages",
         href: `/${workspaceSlug}/projects/${projectId}/pages`,
         icon: PageIcon,
-        access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
+        access: [
+          EUserPermissions.ADMIN,
+          EUserPermissions.MEMBER,
+          EUserPermissions.GUEST,
+        ],
         shouldRender: project?.page_view ?? false,
         sortOrder: 5,
       },
@@ -126,29 +155,39 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         name: "Intake",
         href: `/${workspaceSlug}/projects/${projectId}/intake`,
         icon: IntakeIcon,
-        access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
+        access: [
+          EUserPermissions.ADMIN,
+          EUserPermissions.MEMBER,
+          EUserPermissions.GUEST,
+        ],
         shouldRender: project?.inbox_view ?? false,
         sortOrder: 6,
       },
+      {
+        i18n_key: "sidebar.clockwork",
+        key: "clockwork",
+        name: "Clockwork",
+        href: `/${workspaceSlug}/projects/${projectId}/clockwork`,
+        icon: Clock,
+        access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
+        shouldRender: true,
+        sortOrder: 7,
+      },
     ],
-    [project]
+    [project, workspaceSlug, projectId],
   );
 
   // memoized navigation items and adding additional navigation items
   const navigationItemsMemo = useMemo(() => {
-    const navigationItems = (workspaceSlug: string, projectId: string): TNavigationItem[] => {
-      const navItems = baseNavigation(workspaceSlug, projectId);
+    const navItems = baseNavigation();
 
-      if (additionalNavigationItems) {
-        navItems.push(...additionalNavigationItems(workspaceSlug, projectId));
-      }
-
-      return navItems;
-    };
+    if (additionalNavigationItems) {
+      navItems.push(...additionalNavigationItems(workspaceSlug, projectId));
+    }
 
     // sort navigation items by sortOrder
-    const sortedNavigationItems = navigationItems(workspaceSlug, projectId).sort(
-      (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)
+    const sortedNavigationItems = navItems.toSorted(
+      (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0),
     );
 
     return sortedNavigationItems;
@@ -157,9 +196,17 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
   const isActive = useCallback(
     (item: TNavigationItem) => {
       // work item condition
-      const workItemCondition = workItemId && workItem && !workItem?.is_epic && workItem?.project_id === projectId;
+      const workItemCondition =
+        workItemId &&
+        workItem &&
+        !workItem?.is_epic &&
+        workItem?.project_id === projectId;
       // epic condition
-      const epicCondition = workItemId && workItem && workItem?.is_epic && workItem?.project_id === projectId;
+      const epicCondition =
+        workItemId &&
+        workItem &&
+        workItem?.is_epic &&
+        workItem?.project_id === projectId;
       // is active
       const isWorkItemActive = item.key === "work_items" && workItemCondition;
       const isEpicActive = item.key === "epics" && epicCondition;
@@ -168,7 +215,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
       // return
       return isWorkItemActive || isEpicActive || isPathnameActive;
     },
-    [pathname, workItem, workItemId, projectId]
+    [pathname, workItem, workItemId, projectId],
   );
 
   if (!project) return null;
@@ -178,10 +225,16 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
       {navigationItemsMemo.map((item) => {
         if (!item.shouldRender) return;
 
-        const hasAccess = allowPermissions(item.access, EUserPermissionsLevel.PROJECT, workspaceSlug, project.id);
+        const hasAccess = allowPermissions(
+          item.access,
+          EUserPermissionsLevel.PROJECT,
+          workspaceSlug,
+          project.id,
+        );
         if (!hasAccess) return null;
 
-        const shouldShowCount = item.key === "intake" && (project.intake_count ?? 0) > 0;
+        const shouldShowCount =
+          item.key === "intake" && (project.intake_count ?? 0) > 0;
 
         return (
           <Link key={item.key} href={item.href} onClick={handleProjectClick}>
@@ -191,9 +244,15 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
                   <item.icon
                     className={`size-4 flex-shrink-0 ${item.name === "Intake" ? "stroke-1" : "stroke-[1.5]"}`}
                   />
-                  <span className="text-11 font-medium">{t(item.i18n_key)}</span>
+                  <span className="text-11 font-medium">
+                    {t(item.i18n_key)}
+                  </span>
                 </div>
-                {shouldShowCount && <span className="text-11 font-medium text-tertiary">{project.intake_count}</span>}
+                {shouldShowCount && (
+                  <span className="text-11 font-medium text-tertiary">
+                    {project.intake_count}
+                  </span>
+                )}
               </div>
             </SidebarNavItem>
           </Link>

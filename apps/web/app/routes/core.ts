@@ -216,6 +216,13 @@ export const coreRoutes: RouteConfigEntry[] = [
               "./(all)/[workspaceSlug]/(projects)/projects/(detail)/[projectId]/intake/page.tsx"
             ),
           ]),
+          // Clockwork
+          layout("./(all)/[workspaceSlug]/(projects)/projects/(detail)/[projectId]/clockwork/layout.tsx", [
+            route(
+              ":workspaceSlug/projects/:projectId/clockwork",
+              "./(all)/[workspaceSlug]/(projects)/projects/(detail)/[projectId]/clockwork/page.tsx"
+            ),
+          ]),
         ]),
 
         // Project Archives - Issues, Cycles, Modules
