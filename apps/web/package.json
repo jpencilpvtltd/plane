@@ -83,6 +83,7 @@
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "catalog:",
     "dotenv": "catalog:",
+    "tailwindcss": "4.1.17",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-tsconfig-paths": "^5.1.4"
