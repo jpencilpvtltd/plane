@@ -18,7 +18,7 @@ RUN pnpm add -g turbo@2.9.14
 COPY . .
 
 # Create a pruned workspace for just the admin app
-RUN turbo prune --scope=admin --docker
+RUN turbo prune admin --docker
 
 # =========================================================================== #
 

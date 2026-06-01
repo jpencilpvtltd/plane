@@ -18,7 +18,7 @@ ARG TURBO_VERSION=2.9.14
 RUN corepack enable pnpm && pnpm add -g turbo@${TURBO_VERSION}
 COPY . .
 
-RUN turbo prune --scope=web --docker
+RUN turbo prune web --docker
 
 # *****************************************************************************
 # STAGE 2: Install dependencies & build the project
