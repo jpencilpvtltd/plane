@@ -20,13 +20,13 @@ RUN apk add --no-cache --upgrade \
 
 COPY requirements.txt ./
 COPY requirements ./requirements
-RUN apk add --no-cache libffi-dev
 RUN apk add --no-cache --virtual .build-deps \
     "bash~=5.2" \
     "g++" \
     "gcc" \
     "cargo" \
     "git" \
+    "libffi-dev" \
     "make" \
     "postgresql-dev" \
     "libc-dev" \
