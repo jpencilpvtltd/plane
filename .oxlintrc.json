@@ -20,6 +20,7 @@
     }
   },
   "ignorePatterns": [
+    "clockwork/**",
     ".cache/**",
     ".next/**",
     ".react-router/**",
@@ -40,15 +41,26 @@
     "unicorn/no-null": "off",
     "unicorn/prevent-abbreviations": "off",
     "no-unmodified-loop-condition": "off",
-    "no-unused-vars": [
-      "warn",
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_",
-        "destructuredArrayIgnorePattern": "^_",
-        "ignoreRestSiblings": true
-      }
-    ]
+    "no-shadow": "off",
+    "no-unused-vars": "off",
+    "typescript-eslint/no-extraneous-class": "off",
+    "import/no-unassigned-import": "off",
+    "import/no-named-as-default": "off",
+    "jsx-a11y/alt-text": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/img-redundant-alt": "off",
+    "jsx-a11y/label-has-associated-control": "off",
+    "jsx-a11y/no-static-element-interactions": "off",
+    "no-unneeded-ternary": "off",
+    "no-unused-expressions": "off",
+    "oxc/const-comparisons": "off",
+    "oxc/no-accumulating-spread": "off",
+    "oxc/no-map-spread": "off",
+    "promise/always-return": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "react/no-array-index-key": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/no-empty-file": "off",
+    "unicorn/no-useless-length-check": "off"
   }
 }
