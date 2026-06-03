@@ -7,7 +7,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 ENV CI=1
 
-RUN corepack enable pnpm
+RUN npm install -g pnpm@11.3.0
 
 # =========================================================================== #
 
