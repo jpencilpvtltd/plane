@@ -13,7 +13,7 @@ RUN npm install -g pnpm@11.3.0
 
 FROM base AS builder
 
-RUN pnpm add -g turbo@2.9.14
+RUN npm install -g turbo@2.9.14
 
 COPY . .
 
