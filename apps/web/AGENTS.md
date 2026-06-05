@@ -757,7 +757,7 @@ Inherits from `@plane/tailwind-config/postcss.config.js`
 ```env
 VITE_API_BASE_URL="http://localhost:8000"
 VITE_WEB_BASE_URL="http://localhost:3000"
-VITE_ADMIN_BASE_URL="http://localhost:3001"
+VITE_ADMIN_BASE_URL="http://localhost:3000"
 VITE_ADMIN_BASE_PATH="/god-mode"
 VITE_SPACE_BASE_URL="http://localhost:3002"
 VITE_SPACE_BASE_PATH="/spaces"
