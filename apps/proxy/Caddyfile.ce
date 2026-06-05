@@ -1,7 +1,5 @@
 {
-	{$CERT_EMAIL}
-	acme_ca {$CERT_ACME_CA:https://acme-v02.api.letsencrypt.org/directory} 
-	{$CERT_ACME_DNS}
+	acme_ca {$CERT_ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
 	servers {
 		max_header_size 25MB
 		client_ip_headers X-Forwarded-For X-Real-IP
