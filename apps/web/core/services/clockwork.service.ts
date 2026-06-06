@@ -22,10 +22,12 @@ export class ClockworkService {
    * @param to    "YYYY-MM-DD"
    */
   async getTimeEntries(from: string, to: string): Promise<TClockworkApiResponse> {
-    const response = await clockworkAxios.get<TClockworkApiResponse>("/clockwork", {
+    const response = await clockworkAxios.get("/clockwork", {
       params: { from, to },
     });
-    return response.data;
+    // Handle both direct array response and wrapped response
+    const data = response.data;
+    return Array.isArray(data) ? data : (data?.data ?? []);
   }
 
   /**

@@ -190,6 +190,7 @@ services:
       - api
       - space
       - admin
+      - clockwork
 
 volumes:
   pgdata:

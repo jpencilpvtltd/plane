@@ -40,7 +40,10 @@ export function buildDateRange(from: string, to: string): string[] {
 
 /** Transforms raw API response into flat table rows. */
 function transformApiData(data: TClockworkApiResponse): TClockworkTableRow[] {
-  return data.flatMap((entry) =>
+  // Ensure data is an array (handle cases where API response might be wrapped)
+  const entries = Array.isArray(data) ? data : [];
+  
+  return entries.flatMap((entry) =>
     Object.entries(entry).map(([userName, userData]) => {
       const { total = "00:00", ...dayEntries } = userData;
       return { userName, total, days: dayEntries };
