@@ -20,7 +20,7 @@
 	
 	reverse_proxy /live/* live:3000
 
-	reverse_proxy /clockwork/* clockwork:4001
+	reverse_proxy /clockwork clockwork:4001
 
 	reverse_proxy /api/* api:8000
 
