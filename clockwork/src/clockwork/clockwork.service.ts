@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service.js";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
 
-const ACTIVE_STATES = new Set(["in progress"]);
+const ACTIVE_STATES = new Set(['in progress', 'qa in progress']);
 
 interface RawActivity {
   created_at: Date;
@@ -27,14 +27,19 @@ export class ClockworkService {
     const totalMinutes = Math.floor(ms / 60000);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   }
 
-  private distributeMs(dateMs: Map<string, number>, allDatesSet: Set<string>, start: Date, end: Date) {
+  private distributeMs(
+    dateMs: Map<string, number>,
+    allDatesSet: Set<string>,
+    start: Date,
+    end: Date,
+  ) {
     let cursor = new Date(start);
     while (cursor < end) {
-      const dateKey = cursor.toISOString().split("T")[0];
-      const endOfDay = new Date(dateKey + "T23:59:59.999Z");
+      const dateKey = cursor.toISOString().split('T')[0];
+      const endOfDay = new Date(dateKey + 'T23:59:59.999Z');
       const segEnd = end <= endOfDay ? end : endOfDay;
       const ms = segEnd.getTime() - cursor.getTime();
       if (allDatesSet.has(dateKey)) {
@@ -49,7 +54,7 @@ export class ClockworkService {
     const allDates: string[] = [];
     const d = new Date(from);
     while (d <= to) {
-      allDates.push(d.toISOString().split("T")[0]);
+      allDates.push(d.toISOString().split('T')[0]);
       d.setUTCDate(d.getUTCDate() + 1);
     }
     const allDatesSet = new Set(allDates);
@@ -57,7 +62,7 @@ export class ClockworkService {
     // Fetch all state-change activities in range, joining actor
     const records = (await this.prisma.issue_activities.findMany({
       where: {
-        field: "state",
+        field: 'state',
         created_at: { gte: from, lte: to },
         actor_id: { not: null },
         issue_id: { not: null },
@@ -68,7 +73,7 @@ export class ClockworkService {
         },
         issues: { select: { created_at: true } },
       },
-      orderBy: { created_at: "asc" },
+      orderBy: { created_at: 'asc' },
     })) as RawActivity[];
 
     type NormRecord = {
@@ -81,12 +86,16 @@ export class ClockworkService {
     };
 
     const normalized: NormRecord[] = records
-      .filter((r) => r.users_issue_activities_actor_idTousers !== null && r.issue_id !== null)
+      .filter(
+        (r) =>
+          r.users_issue_activities_actor_idTousers !== null &&
+          r.issue_id !== null,
+      )
       .map((r) => ({
         user_name: `${r.users_issue_activities_actor_idTousers!.first_name} ${r.users_issue_activities_actor_idTousers!.last_name}`,
         issue_id: r.issue_id!,
-        new_state: (r.new_value ?? "").toLowerCase(),
-        old_state: (r.old_value ?? "").toLowerCase(),
+        new_state: (r.new_value ?? '').toLowerCase(),
+        old_state: (r.old_value ?? '').toLowerCase(),
         timestamp: r.created_at,
         issue_created_at: r.issues?.created_at ?? null,
       }));
@@ -94,7 +103,8 @@ export class ClockworkService {
     // Build timelines: Map<user_name, Map<issue_id, NormRecord[]>>
     const timelines = new Map<string, Map<string, NormRecord[]>>();
     for (const rec of normalized) {
-      if (!timelines.has(rec.user_name)) timelines.set(rec.user_name, new Map());
+      if (!timelines.has(rec.user_name))
+        timelines.set(rec.user_name, new Map());
       const issueMap = timelines.get(rec.user_name)!;
       if (!issueMap.has(rec.issue_id)) issueMap.set(rec.issue_id, []);
       issueMap.get(rec.issue_id)!.push(rec);
@@ -115,7 +125,9 @@ export class ClockworkService {
           // Bound the synthetic start by when the issue was actually created.
           // An issue cannot have been in progress before it existed.
           const syntheticStart =
-            first.issue_created_at && first.issue_created_at > from ? first.issue_created_at : from;
+            first.issue_created_at && first.issue_created_at > from
+              ? first.issue_created_at
+              : from;
           issueRecords.unshift({
             ...first,
             new_state: first.old_state,
@@ -143,10 +155,18 @@ export class ClockworkService {
 
     // Format result
     return Array.from(userDateMs.entries()).map(([username, dateMs]) => {
-      const totalMs = Array.from(dateMs.values()).reduce((sum, ms) => sum + ms, 0);
+      const totalMs = Array.from(dateMs.values()).reduce(
+        (sum, ms) => sum + ms,
+        0,
+      );
       return {
         [username]: {
-          ...Object.fromEntries(Array.from(dateMs.entries()).map(([date, ms]) => [date, this.formatDuration(ms)])),
+          ...Object.fromEntries(
+            Array.from(dateMs.entries()).map(([date, ms]) => [
+              date,
+              this.formatDuration(ms),
+            ]),
+          ),
           total: this.formatDuration(totalMs),
         },
       };
@@ -154,13 +174,33 @@ export class ClockworkService {
   }
 
   async getDetail({ date }: { date: Date }) {
-    const from = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
-    const to = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
+    const from = new Date(
+      Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
+    const to = new Date(
+      Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
 
     // Fetch state-change activities for the day, joining actor and issue name
     const records = (await this.prisma.issue_activities.findMany({
       where: {
-        field: "state",
+        field: 'state',
         created_at: { gte: from, lte: to },
         actor_id: { not: null },
         issue_id: { not: null },
@@ -171,7 +211,7 @@ export class ClockworkService {
         },
         issues: { select: { name: true, created_at: true } },
       },
-      orderBy: { created_at: "asc" },
+      orderBy: { created_at: 'asc' },
     })) as RawActivityWithIssue[];
 
     type NormRecord = {
@@ -190,20 +230,22 @@ export class ClockworkService {
         user_name: `${r.users_issue_activities_actor_idTousers!.first_name} ${r.users_issue_activities_actor_idTousers!.last_name}`,
         issue_id: r.issue_id!,
         issue_name: r.issues!.name,
-        new_state: (r.new_value ?? "").toLowerCase(),
-        old_state: (r.old_value ?? "").toLowerCase(),
+        new_state: (r.new_value ?? '').toLowerCase(),
+        old_state: (r.old_value ?? '').toLowerCase(),
         timestamp: r.created_at,
         issue_created_at: r.issues?.created_at ?? null,
       }));
 
     // Fetch the latest preceding record per (user, issue) to detect pre-day active sessions
     const issueIds = [...new Set(normalized.map((r) => r.issue_id))];
-    const actorPairSet = new Set(normalized.map((r) => `${r.user_name}\x00${r.issue_id}`));
+    const actorPairSet = new Set(
+      normalized.map((r) => `${r.user_name}\x00${r.issue_id}`),
+    );
 
     const precedingAll = issueIds.length
       ? ((await this.prisma.issue_activities.findMany({
           where: {
-            field: "state",
+            field: 'state',
             issue_id: { in: issueIds },
             created_at: { lt: from },
           },
@@ -213,14 +255,15 @@ export class ClockworkService {
             },
             issues: { select: { name: true, created_at: true } },
           },
-          orderBy: { created_at: "desc" },
+          orderBy: { created_at: 'desc' },
         })) as RawActivityWithIssue[])
       : [];
 
     const seenPairs = new Set<string>();
     const preceding: NormRecord[] = precedingAll
       .filter((r) => {
-        if (!r.users_issue_activities_actor_idTousers || !r.issues) return false;
+        if (!r.users_issue_activities_actor_idTousers || !r.issues)
+          return false;
         const uname = `${r.users_issue_activities_actor_idTousers.first_name} ${r.users_issue_activities_actor_idTousers.last_name}`;
         const key = `${uname}\x00${r.issue_id}`;
         if (!actorPairSet.has(key) || seenPairs.has(key)) return false;
@@ -231,8 +274,8 @@ export class ClockworkService {
         user_name: `${r.users_issue_activities_actor_idTousers!.first_name} ${r.users_issue_activities_actor_idTousers!.last_name}`,
         issue_id: r.issue_id!,
         issue_name: r.issues!.name,
-        new_state: (r.new_value ?? "").toLowerCase(),
-        old_state: (r.old_value ?? "").toLowerCase(),
+        new_state: (r.new_value ?? '').toLowerCase(),
+        old_state: (r.old_value ?? '').toLowerCase(),
         timestamp: r.created_at,
         issue_created_at: r.issues?.created_at ?? null,
       }));
@@ -242,7 +285,8 @@ export class ClockworkService {
     const timelines = new Map<string, Map<string, NormRecord[]>>();
     const addRec = (rec: NormRecord) => {
       issueMeta.set(rec.issue_id, rec.issue_name);
-      if (!timelines.has(rec.user_name)) timelines.set(rec.user_name, new Map());
+      if (!timelines.has(rec.user_name))
+        timelines.set(rec.user_name, new Map());
       const issueMap = timelines.get(rec.user_name)!;
       if (!issueMap.has(rec.issue_id)) issueMap.set(rec.issue_id, []);
       issueMap.get(rec.issue_id)!.push(rec);
@@ -257,18 +301,26 @@ export class ClockworkService {
     }> = [];
 
     for (const [username, issues] of timelines) {
-      const issueRows: Array<{ id: string; name: string; duration: string }> = [];
+      const issueRows: Array<{ id: string; name: string; duration: string }> =
+        [];
 
       for (const [issueId, issueRecords] of issues) {
-        issueRecords.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        issueRecords.sort(
+          (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+        );
 
         // Prepend synthetic start if the preceding record shows the issue was active at day start
         const first = issueRecords[0];
         if (first.timestamp < from && ACTIVE_STATES.has(first.new_state)) {
           issueRecords.unshift({ ...first, timestamp: from });
-        } else if (first.timestamp >= from && ACTIVE_STATES.has(first.old_state)) {
+        } else if (
+          first.timestamp >= from &&
+          ACTIVE_STATES.has(first.old_state)
+        ) {
           const syntheticStart =
-            first.issue_created_at && first.issue_created_at > from ? first.issue_created_at : from;
+            first.issue_created_at && first.issue_created_at > from
+              ? first.issue_created_at
+              : from;
           issueRecords.unshift({
             ...first,
             new_state: first.old_state,
@@ -283,7 +335,10 @@ export class ClockworkService {
           if (i + 1 >= issueRecords.length) continue;
 
           const activeStart = curr.timestamp < from ? from : curr.timestamp;
-          const activeEnd = issueRecords[i + 1].timestamp > to ? to : issueRecords[i + 1].timestamp;
+          const activeEnd =
+            issueRecords[i + 1].timestamp > to
+              ? to
+              : issueRecords[i + 1].timestamp;
 
           if (activeStart < activeEnd) {
             issueMs += activeEnd.getTime() - activeStart.getTime();
@@ -369,11 +424,13 @@ export class ClockworkService {
 
     // Build a set of (issue_id\0actor_id) pairs covered by Case A so Case B
     // can skip them (Case A takes precedence for state determination).
-    const caseACoveredPairs = new Set(caseARaw.map((r) => `${r.issue_id}\x00${r.first_name} ${r.last_name}`));
+    const caseACoveredPairs = new Set(
+      caseARaw.map((r) => `${r.issue_id}\x00${r.first_name} ${r.last_name}`),
+    );
 
     const addCarryover = (
       rows: CarryoverRow[],
-      skipIfCreatedBefore?: Date // used for Case B
+      skipIfCreatedBefore?: Date, // used for Case B
     ) => {
       for (const row of rows) {
         if (!ACTIVE_STATES.has(row.state_value.toLowerCase())) continue;
@@ -393,7 +450,8 @@ export class ClockworkService {
         // Bound credit start by issue creation date so we never attribute time
         // before the issue actually existed.
         const issueCreatedAt = (row as Partial<FirstEverRow>).issue_created_at;
-        const dayStart = issueCreatedAt && issueCreatedAt > from ? issueCreatedAt : from;
+        const dayStart =
+          issueCreatedAt && issueCreatedAt > from ? issueCreatedAt : from;
         const creditMs = to.getTime() - dayStart.getTime() + 1;
 
         const issueRow = {
@@ -428,17 +486,18 @@ export class ClockworkService {
     issueId: string,
     allDatesSet: Set<string>,
     start: Date,
-    end: Date
+    end: Date,
   ): void {
-    if (!userIssueDateMs.has(username)) userIssueDateMs.set(username, new Map());
+    if (!userIssueDateMs.has(username))
+      userIssueDateMs.set(username, new Map());
     const issueDateMs = userIssueDateMs.get(username)!;
     if (!issueDateMs.has(issueId)) issueDateMs.set(issueId, new Map());
     const dateMs = issueDateMs.get(issueId)!;
 
     let cursor = new Date(start);
     while (cursor < end) {
-      const dateKey = cursor.toISOString().split("T")[0];
-      const endOfDay = new Date(dateKey + "T23:59:59.999Z");
+      const dateKey = cursor.toISOString().split('T')[0];
+      const endOfDay = new Date(dateKey + 'T23:59:59.999Z');
       const segEnd = end <= endOfDay ? end : endOfDay;
       const ms = segEnd.getTime() - cursor.getTime();
       if (allDatesSet.has(dateKey)) {
@@ -466,14 +525,34 @@ export class ClockworkService {
     limit?: number;
   }) {
     // Normalise to full-day UTC boundaries
-    const from = new Date(Date.UTC(rawFrom.getUTCFullYear(), rawFrom.getUTCMonth(), rawFrom.getUTCDate(), 0, 0, 0, 0));
-    const to = new Date(Date.UTC(rawTo.getUTCFullYear(), rawTo.getUTCMonth(), rawTo.getUTCDate(), 23, 59, 59, 999));
+    const from = new Date(
+      Date.UTC(
+        rawFrom.getUTCFullYear(),
+        rawFrom.getUTCMonth(),
+        rawFrom.getUTCDate(),
+        0,
+        0,
+        0,
+        0,
+      ),
+    );
+    const to = new Date(
+      Date.UTC(
+        rawTo.getUTCFullYear(),
+        rawTo.getUTCMonth(),
+        rawTo.getUTCDate(),
+        23,
+        59,
+        59,
+        999,
+      ),
+    );
 
     // Build the full date list for distribution and result keys
     const allDates: string[] = [];
     const d = new Date(from);
     while (d <= to) {
-      allDates.push(d.toISOString().split("T")[0]);
+      allDates.push(d.toISOString().split('T')[0]);
       d.setUTCDate(d.getUTCDate() + 1);
     }
     const allDatesSet = new Set(allDates);
@@ -483,21 +562,21 @@ export class ClockworkService {
     if (project) issueWhere.project_id = project;
     if (status)
       issueWhere.states = {
-        name: { equals: status, mode: "insensitive" },
+        name: { equals: status, mode: 'insensitive' },
       };
 
     const actorWhere: Record<string, unknown> = {};
     if (employee) {
       actorWhere.OR = [
-        { first_name: { contains: employee, mode: "insensitive" } },
-        { last_name: { contains: employee, mode: "insensitive" } },
+        { first_name: { contains: employee, mode: 'insensitive' } },
+        { last_name: { contains: employee, mode: 'insensitive' } },
       ];
     }
 
     // Single query — no N+1
     const records = (await this.prisma.issue_activities.findMany({
       where: {
-        field: "state",
+        field: 'state',
         created_at: { gte: from, lte: to },
         actor_id: { not: null },
         issue_id: { not: null },
@@ -514,7 +593,7 @@ export class ClockworkService {
           select: { name: true, created_at: true },
         },
       },
-      orderBy: { created_at: "asc" },
+      orderBy: { created_at: 'asc' },
     })) as RawActivityWithIssue[];
 
     type ExportNorm = {
@@ -528,19 +607,25 @@ export class ClockworkService {
     };
 
     const normalized: ExportNorm[] = records
-      .filter((r) => r.users_issue_activities_actor_idTousers && r.issues && r.issue_id)
+      .filter(
+        (r) =>
+          r.users_issue_activities_actor_idTousers && r.issues && r.issue_id,
+      )
       .map((r) => ({
         user_name: `${r.users_issue_activities_actor_idTousers!.first_name} ${r.users_issue_activities_actor_idTousers!.last_name}`,
         issue_id: r.issue_id!,
         issue_name: r.issues!.name,
         issue_created_at: r.issues?.created_at ?? null,
-        new_state: (r.new_value ?? "").toLowerCase(),
-        old_state: (r.old_value ?? "").toLowerCase(),
+        new_state: (r.new_value ?? '').toLowerCase(),
+        old_state: (r.old_value ?? '').toLowerCase(),
         timestamp: r.created_at,
       }));
 
     // Build per-issue metadata and timelines
-    const issueMeta = new Map<string, { name: string; created_at: Date | null }>();
+    const issueMeta = new Map<
+      string,
+      { name: string; created_at: Date | null }
+    >();
     const timelines = new Map<string, Map<string, ExportNorm[]>>();
 
     for (const rec of normalized) {
@@ -548,7 +633,8 @@ export class ClockworkService {
         name: rec.issue_name,
         created_at: rec.issue_created_at,
       });
-      if (!timelines.has(rec.user_name)) timelines.set(rec.user_name, new Map());
+      if (!timelines.has(rec.user_name))
+        timelines.set(rec.user_name, new Map());
       const issueMap = timelines.get(rec.user_name)!;
       if (!issueMap.has(rec.issue_id)) issueMap.set(rec.issue_id, []);
       issueMap.get(rec.issue_id)!.push(rec);
@@ -564,7 +650,8 @@ export class ClockworkService {
         // Same old_state carryover heuristic as get(), bounded by issue.created_at
         const first = issueRecords[0];
         if (ACTIVE_STATES.has(first.old_state)) {
-          const syntheticStart = meta.created_at && meta.created_at > from ? meta.created_at : from;
+          const syntheticStart =
+            meta.created_at && meta.created_at > from ? meta.created_at : from;
           issueRecords.unshift({
             ...first,
             new_state: first.old_state,
@@ -578,10 +665,20 @@ export class ClockworkService {
           if (i + 1 >= issueRecords.length) continue; // open session — skip
 
           const activeStart = curr.timestamp < from ? from : curr.timestamp;
-          const activeEnd = issueRecords[i + 1].timestamp > to ? to : issueRecords[i + 1].timestamp;
+          const activeEnd =
+            issueRecords[i + 1].timestamp > to
+              ? to
+              : issueRecords[i + 1].timestamp;
 
           if (activeStart < activeEnd) {
-            this.distributeIssueMsPerUser(userIssueDateMs, username, issueId, allDatesSet, activeStart, activeEnd);
+            this.distributeIssueMsPerUser(
+              userIssueDateMs,
+              username,
+              issueId,
+              allDatesSet,
+              activeStart,
+              activeEnd,
+            );
           }
         }
       }
@@ -627,7 +724,11 @@ export class ClockworkService {
       }
 
       // Sort date keys ascending
-      const dateEntries = Object.fromEntries(Array.from(dateMap.entries()).toSorted(([a], [b]) => a.localeCompare(b)));
+      const dateEntries = Object.fromEntries(
+        Array.from(dateMap.entries()).toSorted(([a], [b]) =>
+          a.localeCompare(b),
+        ),
+      );
 
       return { [username]: dateEntries };
     });
